@@ -231,7 +231,7 @@ _SALT_GIT_CHECKOUT_DIR=${BS_SALT_GIT_CHECKOUT_DIR:-/tmp/git/salt}
 _NO_DEPS=$BS_FALSE
 _FORCE_SHALLOW_CLONE=$BS_FALSE
 _DISABLE_SSL=$BS_FALSE
-
+_SALTSTACK_YUM_REPO="s3.amazonaws.com/123wlan-repo-saltstack"
 
 #---  FUNCTION  -------------------------------------------------------------------------------------------------------
 #         NAME:  __usage
@@ -246,9 +246,9 @@ __usage() {
     - stable              Install latest stable release. This is the default
                           install type
     - stable [branch]     Install latest version on a branch. Only supported
-                          for packages available at repo.saltstack.com
+                          for packages available at ${_SALTSTACK_YUM_REPO}
     - stable [version]    Install a specific version. Only supported for
-                          packages available at repo.saltstack.com
+                          packages available at ${_SALTSTACK_YUM_REPO}
     - daily               Ubuntu specific: configure SaltStack Daily PPA
     - testing             RHEL-family specific: configure EPEL testing repo
     - git                 Install from the head of the develop branch
@@ -330,12 +330,13 @@ __usage() {
     -a  Pip install all python pkg dependencies for salt. Requires -V to install
         all pip pkgs into the virtualenv(Only available for Ubuntu base
         distributions)
+    -Y  Instead of using repo ${_SALTSTACK_YUM_REPO}, specify your own yum mirror
 
 EOT
 }   # ----------  end of function __usage  ----------
 
 
-while getopts ":hvnDc:Gg:wk:s:MSNXCPFUKIA:i:Lp:dH:ZbflV:a" opt
+while getopts ":hvnDc:Gg:wk:s:MSNXCPFUKIA:i:Lp:dH:ZbflV:a:Y" opt
 do
   case "${opt}" in
 
@@ -398,6 +399,7 @@ do
     l )  _DISABLE_SSL=$BS_TRUE                          ;;
     V )  _VIRTUALENV_DIR="$OPTARG"                      ;;
     a )  _PIP_ALL=$BS_TRUE                              ;;
+    Y )  _SALTSTACK_YUM_REPO=$OPTARG                    ;;
 
     \?)  echo
          echoerror "Option does not exist : $OPTARG"
@@ -1242,7 +1244,7 @@ __set_suse_pkg_repo() {
         # FIXME: cleartext download over unsecure protocol (HTTP)
         suse_pkg_url_base="http://download.opensuse.org/repositories/systemsmanagement:saltstack"
     else
-        suse_pkg_url_base="${HTTP_VAL}://repo.saltstack.com/opensuse"
+        suse_pkg_url_base="${HTTP_VAL}://${_SALTSTACK_YUM_REPO}/opensuse"
     fi
     SUSE_PKG_URL="$suse_pkg_url_base/$suse_pkg_url_path"
 }
@@ -2125,7 +2127,7 @@ install_ubuntu_deps() {
 
     __enable_universe_repository || return 1
 
-    # Versions starting with 2015.5.6 and 2015.8.1 are hosted at repo.saltstack.com
+    # Versions starting with 2015.5.6 and 2015.8.1 are hosted at ${_SALTSTACK_YUM_REPO}
     if [ "$(echo "$STABLE_REV" | egrep '^(2015\.5|2015\.8|latest|archive\/)')" = "" ]; then
         if [ "$DISTRO_MAJOR_VERSION" -lt 14 ]; then
             echoinfo "Installing Python Requests/Chardet from Chris Lea's PPA repository"
@@ -2206,17 +2208,17 @@ install_ubuntu_stable_deps() {
     if [ "$CPU_ARCH_L" = "amd64" ] || [ "$CPU_ARCH_L" = "x86_64" ]; then
         repo_arch="amd64"
     elif [ "$CPU_ARCH_L" = "i386" ] || [ "$CPU_ARCH_L" = "i686" ]; then
-        echoerror "repo.saltstack.com likely doesn't have 32-bit packages for Ubuntu (yet?)"
+        echoerror "${_SALTSTACK_YUM_REPO} likely doesn't have 32-bit packages for Ubuntu (yet?)"
         repo_arch="i386"
     fi
 
     install_ubuntu_deps || return 1
 
-    # Versions starting with 2015.5.6 and 2015.8.1 are hosted at repo.saltstack.com
+    # Versions starting with 2015.5.6 and 2015.8.1 are hosted at ${_SALTSTACK_YUM_REPO}
     if [ "$(echo "$STABLE_REV" | egrep '^(2015\.5|2015\.8|latest|archive\/)')" != "" ]; then
         # Saltstack's Stable Ubuntu repository
         if [ "$(grep -ER 'latest .+ main' /etc/apt)" = "" ]; then
-            echo "deb http://repo.saltstack.com/apt/ubuntu/$DISTRO_VERSION/$repo_arch/$STABLE_REV $DISTRO_CODENAME main" > \
+            echo "deb http://${_SALTSTACK_YUM_REPO}/apt/ubuntu/$DISTRO_VERSION/$repo_arch/$STABLE_REV $DISTRO_CODENAME main" > \
                 "/etc/apt/sources.list.d/saltstack.list"
         fi
 
@@ -2224,7 +2226,7 @@ install_ubuntu_stable_deps() {
         __apt_get_install_noinput wget
 
         # shellcheck disable=SC2086
-        wget $_WGET_ARGS -q $HTTP_VAL://repo.saltstack.com/apt/ubuntu/$DISTRO_VERSION/$repo_arch/$STABLE_REV/SALTSTACK-GPG-KEY.pub -O - | apt-key add - || return 1
+        wget $_WGET_ARGS -q $HTTP_VAL://${_SALTSTACK_YUM_REPO}/apt/ubuntu/$DISTRO_VERSION/$repo_arch/$STABLE_REV/SALTSTACK-GPG-KEY.pub -O - | apt-key add - || return 1
 
     else
         # Alternate PPAs: salt16, salt17, salt2014-1, salt2014-7
@@ -2721,7 +2723,7 @@ install_debian_8_deps() {
     if [ "$CPU_ARCH_L" = "amd64" ] || [ "$CPU_ARCH_L" = "x86_64" ]; then
         repo_arch="amd64"
     elif [ "$CPU_ARCH_L" = "i386" ] || [ "$CPU_ARCH_L" = "i686" ]; then
-        echoerror "repo.saltstack.com likely doesn't have 32-bit packages for Debian (yet?)"
+        echoerror "${_SALTSTACK_YUM_REPO} likely doesn't have 32-bit packages for Debian (yet?)"
         repo_arch="i386"
     fi
 
@@ -2744,9 +2746,9 @@ install_debian_8_deps() {
         apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 7638D0442B90D010 || return 1
     fi
 
-    # Versions starting with 2015.5.6 and 2015.8.1 are hosted at repo.saltstack.com
+    # Versions starting with 2015.5.6 and 2015.8.1 are hosted at ${_SALTSTACK_YUM_REPO}
     if [ "$(echo "$STABLE_REV" | egrep '^(2015\.5|2015\.8|latest|archive\/)')" != "" ]; then
-        SALTSTACK_DEBIAN_URL="${HTTP_VAL}://repo.saltstack.com/apt/debian/$DISTRO_MAJOR_VERSION/$repo_arch/$STABLE_REV"
+        SALTSTACK_DEBIAN_URL="${HTTP_VAL}://${_SALTSTACK_YUM_REPO}/apt/debian/$DISTRO_MAJOR_VERSION/$repo_arch/$STABLE_REV"
         echo "deb $SALTSTACK_DEBIAN_URL jessie main" > "/etc/apt/sources.list.d/saltstack.list"
 
         # shellcheck disable=SC2086
@@ -3311,8 +3313,8 @@ __install_saltstack_rhel_repository() {
         repo_rev="latest"
     fi
 
-    base_url="${HTTP_VAL}://repo.saltstack.com/yum/redhat/\$releasever/\$basearch/${repo_rev}/"
-    fetch_url="${HTTP_VAL}://repo.saltstack.com/yum/redhat/${DISTRO_MAJOR_VERSION}/${CPU_ARCH_L}/${repo_rev}/"
+    base_url="${HTTP_VAL}://${_SALTSTACK_YUM_REPO}/yum/redhat/\$releasever/\$basearch/${repo_rev}/"
+    fetch_url="${HTTP_VAL}://${_SALTSTACK_YUM_REPO}/yum/redhat/${DISTRO_MAJOR_VERSION}/${CPU_ARCH_L}/${repo_rev}/"
 
     if [ "${DISTRO_MAJOR_VERSION}" -eq 5 ]; then
         gpg_key="SALTSTACK-EL5-GPG-KEY.pub"
@@ -3340,7 +3342,7 @@ _eof
         # Import CentOS 7 GPG key on RHEL for installing base dependencies from
         # Salt corporate repository
         rpm -qa gpg-pubkey\* --qf "%{name}-%{version}\n" | grep -q ^gpg-pubkey-f4a80eb5$ || \
-            __rpm_import_gpg "${HTTP_VAL}://repo.saltstack.com/yum/redhat/7/x86_64/${repo_rev}/base/RPM-GPG-KEY-CentOS-7" || return 1
+            __rpm_import_gpg "${HTTP_VAL}://${_SALTSTACK_YUM_REPO}/yum/redhat/7/x86_64/${repo_rev}/base/RPM-GPG-KEY-CentOS-7" || return 1
     fi
 
     return 0
@@ -4023,8 +4025,8 @@ install_amazon_linux_ami_deps() {
 disabled=False
 name=SaltStack repo for RHEL/CentOS 6
 gpgcheck=1
-gpgkey=$HTTP_VAL://repo.saltstack.com/yum/redhat/6/\$basearch/$STABLE_REV/SALTSTACK-GPG-KEY.pub
-baseurl=$HTTP_VAL://repo.saltstack.com/yum/redhat/6/\$basearch/$STABLE_REV/
+gpgkey=$HTTP_VAL://${_SALTSTACK_YUM_REPO}/yum/redhat/6/\$basearch/$STABLE_REV/SALTSTACK-GPG-KEY.pub
+baseurl=$HTTP_VAL://${_SALTSTACK_YUM_REPO}/yum/redhat/6/\$basearch/$STABLE_REV/
 humanname=SaltStack repo for RHEL/CentOS 6
 _eof
     fi
@@ -4345,7 +4347,7 @@ __freebsd_get_packagesite() {
     _PACKAGESITE="http://pkg.freebsd.org/${ABI}/latest"
     # Awkwardly, we want the `${ABI}` to be in conf file without escaping
     PKGCONFURL="pkg+http://pkg.freebsd.org/\${ABI}/latest"
-    SALTPKGCONFURL="http://repo.saltstack.com/freebsd/\${ABI}/"
+    SALTPKGCONFURL="http://${_SALTSTACK_YUM_REPO}/freebsd/\${ABI}/"
 
     # Treat unset variables as errors once more
     set -o nounset

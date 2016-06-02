@@ -231,7 +231,7 @@ _SALT_GIT_CHECKOUT_DIR=${BS_SALT_GIT_CHECKOUT_DIR:-/tmp/git/salt}
 _NO_DEPS=$BS_FALSE
 _FORCE_SHALLOW_CLONE=$BS_FALSE
 _DISABLE_SSL=$BS_FALSE
-_SALTSTACK_YUM_REPO="s3.amazonaws.com/123wlan-repo-saltstack"
+_SALTSTACK_YUM_REPO="repo.saltstack.com"
 
 #---  FUNCTION  -------------------------------------------------------------------------------------------------------
 #         NAME:  __usage
@@ -336,7 +336,7 @@ EOT
 }   # ----------  end of function __usage  ----------
 
 
-while getopts ":hvnDc:Gg:wk:s:MSNXCPFUKIA:i:Lp:dH:ZbflV:a:Y" opt
+while getopts ":hvnDc:Gg:wk:s:MSNXCPFUKIA:i:Lp:dH:ZbflV:a:Y:" opt
 do
   case "${opt}" in
 

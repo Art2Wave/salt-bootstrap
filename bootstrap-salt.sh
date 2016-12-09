@@ -210,7 +210,8 @@ _SALT_CACHE_DIR=${BS_SALT_CACHE_DIR:-/var/cache/salt}
 _PKI_DIR=${_SALT_ETC_DIR}/pki
 _FORCE_OVERWRITE=${BS_FORCE_OVERWRITE:-$BS_FALSE}
 _GENTOO_USE_BINHOST=${BS_GENTOO_USE_BINHOST:-$BS_FALSE}
-_EPEL_REPO=${BS_EPEL_REPO:-epel}
+#NAAS-7801: Intentionally blocking epel install for our environment by setting it to saltstack-repo
+_EPEL_REPO=${BS_EPEL_REPO:-saltstack-repo}
 _EPEL_REPOS_INSTALLED=$BS_FALSE
 _UPGRADE_SYS=${BS_UPGRADE_SYS:-$BS_FALSE}
 _INSECURE_DL=${BS_INSECURE_DL:-$BS_FALSE}
@@ -4011,11 +4012,15 @@ install_amazon_linux_ami_2010_git_deps() {
 }
 
 install_amazon_linux_ami_deps() {
-    # enable the EPEL repo
-    /usr/bin/yum-config-manager --enable epel || return 1
+  
+    ###### NAAS-7801: DISABLING we do not want to rely on EPEL for our environment ####
+    # 
+    ## enable the EPEL repo
+    #/usr/bin/yum-config-manager --enable epel || return 1
 
-    # exclude Salt and ZeroMQ packages from EPEL
-    /usr/bin/yum-config-manager epel --setopt "epel.exclude=zeromq* salt* python-zmq*" --save || return 1
+    ## exclude Salt and ZeroMQ packages from EPEL
+    #/usr/bin/yum-config-manager epel --setopt "epel.exclude=zeromq* salt* python-zmq*" --save || return 1
+    ############################################################################
 
     __REPO_FILENAME="saltstack-repo.repo"
 

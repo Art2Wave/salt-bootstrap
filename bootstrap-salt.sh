@@ -4032,7 +4032,9 @@ name=SaltStack repo for RHEL/CentOS 6
 gpgcheck=1
 gpgkey=$HTTP_VAL://${_SALTSTACK_YUM_REPO}/yum/redhat/6/\$basearch/$STABLE_REV/SALTSTACK-GPG-KEY.pub
 baseurl=$HTTP_VAL://${_SALTSTACK_YUM_REPO}/yum/redhat/6/\$basearch/$STABLE_REV/
-humanname=SaltStack repo for RHEL/CentOS 6
+humanname=In-house SaltStack repo for RHEL/CentOS 6
+timeout=90
+retries=30
 _eof
     fi
 
